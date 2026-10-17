@@ -172,9 +172,18 @@ def _doc_danh_muc(path):
     return out
 
 
-def doc_thu_muc(goc: str) -> BoDuLieu:
-    """goc = thư mục 'TỔNG HỢP' (chứa DANH_MUC_DU_AN.xlsx)."""
+FILE_SUA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sua_du_lieu.json")
+
+
+def doc_thu_muc(goc: str, file_sua: str | None = FILE_SUA) -> BoDuLieu:
+    """goc = thư mục 'TỔNG HỢP' (chứa DANH_MUC_DU_AN.xlsx).
+    file_sua = danh sách sửa đã được xác nhận (áp dụng khi gặp đúng file#dòng)."""
     canh_bao = []
+    sua = {}
+    if file_sua and os.path.exists(file_sua):
+        import json
+        sua = {x["ma_import"]: x for x in json.load(open(file_sua, encoding="utf-8"))["sua"]}
+    da_sua = 0
     du_an = _doc_danh_muc(os.path.join(goc, "DANH_MUC_DU_AN.xlsx"))
     da = {d.ma: d for d in du_an}
 
@@ -231,6 +240,15 @@ def doc_thu_muc(goc: str) -> BoDuLieu:
                 ngay = ngay_iso(g("NGAY"))
             except ValueError as ex:
                 raise SystemExit(f"{rel} dòng {i}: {ex}")
+            ghi_sua = ""
+            s_ = sua.get(f"{rel}#{i}")
+            if s_:
+                if s_["noi_dung"] != nd:
+                    raise SystemExit(f"{rel} dòng {i}: file sửa ghi '{s_['noi_dung']}' nhưng Excel là '{nd}' "
+                                     "– file đã bị chèn/xoá dòng, kiểm tra lại sua_du_lieu.json")
+                ghi_sua = f"[sửa ngày {ngay or 'trống'} → {s_['ngay']}: {s_['ly_do']}]"
+                ngay = s_["ngay"]
+                da_sua += 1
 
             # lỗi cứng: không thể lưu dù có đánh dấu
             if not ma:
@@ -266,6 +284,9 @@ def doc_thu_muc(goc: str) -> BoDuLieu:
                         ly_do.append(f"ngày {ngay} sau kết thúc {d.ket_thuc}")
 
             gc = g("GHI_CHU")
+            gc = ngay_iso(gc) if isinstance(gc, (dt.date, dt.datetime)) else chu(gc)
+            if ghi_sua:
+                gc = f"{gc} {ghi_sua}".strip()
             gd.append(GiaoDich(
                 ma_import=f"{rel}#{i}",
                 du_an="" if phan_bo == "CHUNG" else ma_da,
@@ -273,11 +294,14 @@ def doc_thu_muc(goc: str) -> BoDuLieu:
                 dvt=chu(g("DVT")), so_luong=sl, don_gia=dg,
                 nguon_tien=chu(g("NGUON_TIEN")).upper(), phan_bo=phan_bo,
                 nha_cc=chu(g("NHA_CC")), quy_cach=chu(g("QUY_CACH")),
-                ghi_chu=ngay_iso(gc) if isinstance(gc, (dt.date, dt.datetime)) else chu(gc),
+                ghi_chu=gc,
                 nguon_goc=chu(g("DONG_GOC")), ly_do=ly_do,
                 trang_thai="DA_HUY" if da_huy else "HIEU_LUC",
             ))
         wb.close()
+
+    if sua:
+        canh_bao.append(f"Đã áp dụng {da_sua}/{len(sua)} dòng sửa trong sua_du_lieu.json")
 
     # Dữ liệu cũ: các dòng giống nhau (cùng ngày, nội dung, SL, ĐG) đã được Richard xác nhận
     # là giao dịch riêng (khác mã màu / mã vật liệu ghi ở ghi chú) – KHÔNG đánh dấu trùng.

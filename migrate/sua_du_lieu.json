@@ -1,0 +1,12 @@
+{
+  "_ghi_chu": "Sửa dữ liệu cũ khi chuyển sang database, Richard xác nhận 18/10/2026. Khoá = file#dòng trong 'TỔNG HỢP'. Script kiểm tra 'noi_dung' phải khớp trước khi sửa: nếu file Excel đã bị chèn hoặc xoá dòng thì script dừng lại, không sửa nhầm.",
+  "sua": [
+    {"ma_import": "2025/380H81H30PVC/0.02_THI_CONG/0.02.02_VAT_TU_THO/380H81H30PVC_0.02.02.01_CDX.xlsx#138", "noi_dung": "CBT28", "ngay": "2025-12-29", "ly_do": "gõ nhầm năm 2026 → 2025"},
+    {"ma_import": "2025/380H81H30PVC/0.02_THI_CONG/0.02.02_VAT_TU_THO/380H81H30PVC_0.02.02.01_CDX.xlsx#139", "noi_dung": "D1X2", "ngay": "2025-12-29", "ly_do": "gõ nhầm năm 2026 → 2025"},
+    {"ma_import": "2025/380H81H30PVC/0.02_THI_CONG/0.02.02_VAT_TU_THO/380H81H30PVC_0.02.02.01_CDX.xlsx#140", "noi_dung": "X HT XT", "ngay": "2025-12-30", "ly_do": "gõ nhầm năm 2026 → 2025"},
+    {"ma_import": "2025/380H81H30PVC/0.02_THI_CONG/0.02.02_VAT_TU_THO/380H81H30PVC_0.02.02.01_CDX.xlsx#141", "noi_dung": "G ỐNG", "ngay": "2025-12-31", "ly_do": "gõ nhầm năm 2026 → 2025"},
+    {"ma_import": "2025/380H81H30PVC/0.02_THI_CONG/0.02.02_VAT_TU_THO/380H81H30PVC_0.02.02.01_CDX.xlsx#142", "noi_dung": "G MI", "ngay": "2025-12-31", "ly_do": "gõ nhầm năm 2026 → 2025"},
+    {"ma_import": "2025/380H81H30PVC/1_THU/380H81H30PVC_1_THU.xlsx#5", "noi_dung": "Giá trị hợp đồng", "ngay": "2025-08-29", "ly_do": "ngày ký HĐ lấy bằng ngày khởi công"},
+    {"ma_import": "2025/380H81H30PVC/1_THU/380H81H30PVC_1_THU.xlsx#6", "noi_dung": "Phát sinh (theo file Tienluongex)", "ngay": "2026-02-19", "ly_do": "chốt phát sinh = cuối tuần 25 (khởi công 29/08/2025 + 25×7 − 1 ngày = ngày kết thúc)"}
+  ]
+}

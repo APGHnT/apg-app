@@ -39,7 +39,7 @@ python migrate/import_excel.py "đường/dẫn/TỔNG HỢP" --sqlite thu.db --
 python migrate/doi_chieu.py "đường/dẫn/TỔNG HỢP/TONG_HOP.xlsx" --sqlite thu.db
 ```
 
-Kết quả trên bộ backup 17/10/2026 (950 dòng): khớp TONG_HOP từng dự án, lệch dưới 1 đồng do làm tròn thành tiền. Có 15 giao dịch đã huỷ (0 đ) và 7 dòng cần xem lại (5 dòng ngày sai năm, 2 khoản thu chưa có ngày). Các dòng giống hệt nhau trong dữ liệu cũ đã được xác nhận là giao dịch riêng, phân biệt bằng mã màu hoặc mã vật liệu ghi trong ghi chú.
+Kết quả trên bộ backup 17/10/2026 (950 dòng): khớp TONG_HOP từng dự án, lệch dưới 1 đồng do làm tròn thành tiền. Có 15 giao dịch đã huỷ (0 đ). 7 dòng đã được sửa theo xác nhận ngày 18/10/2026, ghi trong `migrate/sua_du_lieu.json`: 5 dòng sai năm 12/2026 sửa thành 12/2025, và bổ sung ngày cho 2 khoản thu của 380. Hiện còn **0 dòng cần xem lại**. Các dòng giống hệt nhau trong dữ liệu cũ đã được xác nhận là giao dịch riêng, phân biệt bằng mã màu hoặc mã vật liệu ghi trong ghi chú.
 
 Khi nhập mới, app nên cảnh báo trùng theo **dự án + ngày + nội dung + quy cách + SL + ĐG**. Vì vậy mã màu và mã vật liệu nên ghi vào `quy_cach`, không ghi vào ghi chú.
 
@@ -56,6 +56,8 @@ python migrate/doi_chieu.py "…/TỔNG HỢP/TONG_HOP.xlsx" --pb http://127.0.0
 ```
 
 Chạy lại script nạp nhiều lần vẫn an toàn: dòng đã có (cùng `file#dòng`) sẽ được bỏ qua.
+
+**Sửa dữ liệu cũ** thì ghi vào `migrate/sua_du_lieu.json`, không sửa trực tiếp file Excel. Mỗi dòng sửa có kèm `noi_dung` để đối chiếu: nếu file Excel đã bị chèn hoặc xoá dòng làm lệch vị trí, script sẽ dừng lại thay vì sửa nhầm dòng. Lý do sửa được ghi thêm vào cột ghi chú của giao dịch để tra lại sau.
 
 ## Kiểm tra tự động (GitHub Actions)
 
