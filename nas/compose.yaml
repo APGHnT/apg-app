@@ -1,0 +1,15 @@
+services:
+  pocketbase:
+    build: .
+    image: apg-pocketbase:0.40.5
+    container_name: apg-pocketbase
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    environment:
+      - TZ=Asia/Ho_Chi_Minh
+    volumes:
+      - ./pb_data:/pb/pb_data              # DỮ LIỆU – phải được sao lưu (Hyper Backup)
+      - ./pb_migrations:/pb/pb_migrations:ro
+      - ./pb_hooks:/pb/pb_hooks:ro
+    mem_limit: 512m

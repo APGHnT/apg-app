@@ -66,3 +66,49 @@ jobs:
       - name: Nhật ký PocketBase
         if: always()
         run: cat pocketbase/pb.log || true
+
+  bo-cai-nas:
+    # Chạy thử đúng bộ cài gửi cho NAS: build Docker, chạy compose, nạp dữ liệu mẫu, đối chiếu
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Đóng gói bộ cài NAS
+        run: python nas/dong_goi.py
+
+      - name: Build và chạy như trên NAS (docker compose)
+        working-directory: dist/apg-pocketbase
+        run: |
+          docker compose up -d --build
+          for i in $(seq 1 40); do curl -sf http://127.0.0.1:8090/api/health && break; sleep 2; done
+          docker logs apg-pocketbase 2>&1 | grep -q "pbinstall" && echo "✓ có link tạo tài khoản quản trị lần đầu trong Log"
+          docker exec apg-pocketbase /pb/pocketbase superuser upsert "$PB_EMAIL" "$PB_PASSWORD" --dir /pb/pb_data
+
+      - name: Nạp dữ liệu mẫu vào container và đối chiếu
+        run: |
+          pip install -r migrate/requirements.txt
+          python tests/tao_du_lieu_mau.py tests/mau
+          python migrate/import_excel.py "tests/mau/TỔNG HỢP" --pb http://127.0.0.1:8090
+          python migrate/doi_chieu.py "tests/mau/TỔNG HỢP/TONG_HOP.xlsx" --pb http://127.0.0.1:8090 --sai-so 0
+          python tests/kiem_tra_hook.py http://127.0.0.1:8090
+
+      - name: Khởi động lại container – dữ liệu phải còn nguyên
+        run: |
+          docker restart apg-pocketbase
+          for i in $(seq 1 40); do curl -sf http://127.0.0.1:8090/api/health && break; sleep 2; done
+          python migrate/doi_chieu.py "tests/mau/TỔNG HỢP/TONG_HOP.xlsx" --pb http://127.0.0.1:8090 --sai-so 0
+
+      - name: Lưu bộ cài
+        uses: actions/upload-artifact@v4
+        with:
+          name: apg-pocketbase-nas
+          path: dist/apg-pocketbase.zip
+
+      - name: Nhật ký container
+        if: always()
+        run: docker logs apg-pocketbase || true
