@@ -1,0 +1,16 @@
+# Dữ liệu thật – KHÔNG đưa lên GitHub trừ khi đã quyết định rõ
+data/
+*.db
+can_xem_lai.csv
+
+# PocketBase chạy tại máy
+pocketbase/pocketbase
+pocketbase/pocketbase.exe
+pocketbase/pb_data/
+pocketbase/pb.log
+
+# Dữ liệu mẫu sinh tự động
+tests/mau/
+
+__pycache__/
+.DS_Store

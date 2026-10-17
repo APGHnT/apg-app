@@ -1,0 +1,68 @@
+name: Kiểm tra chuyển dữ liệu
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  PB_VERSION: "0.40.5"
+  PB_EMAIL: ci@apg.local
+  PB_PASSWORD: ci-chi-dung-trong-may-test
+
+jobs:
+  kiem-tra:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cài thư viện Python
+        run: pip install -r migrate/requirements.txt
+
+      - name: SQL báo cáo giống nhau ở 2 nơi
+        run: python tests/kiem_tra_sql.py
+
+      - name: Tải PocketBase v${{ env.PB_VERSION }}
+        working-directory: pocketbase
+        run: |
+          curl -sSfL -o pb.zip "https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_amd64.zip"
+          unzip -q pb.zip pocketbase && rm pb.zip
+          ./pocketbase --version
+
+      - name: Dựng PocketBase tạm (chạy migration + hook)
+        working-directory: pocketbase
+        run: |
+          ./pocketbase superuser upsert "$PB_EMAIL" "$PB_PASSWORD"
+          ./pocketbase serve --http 127.0.0.1:8090 > pb.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8090/api/health && exit 0; sleep 1; done
+          cat pb.log; exit 1
+
+      - name: Dữ liệu mẫu → PocketBase → đối chiếu (phải lệch 0 đồng)
+        run: |
+          python tests/tao_du_lieu_mau.py tests/mau
+          python migrate/import_excel.py "tests/mau/TỔNG HỢP" --pb http://127.0.0.1:8090
+          python migrate/doi_chieu.py "tests/mau/TỔNG HỢP/TONG_HOP.xlsx" --pb http://127.0.0.1:8090 --sai-so 0
+
+      - name: Chạy lại lần 2 không bị nhân đôi
+        run: |
+          python migrate/import_excel.py "tests/mau/TỔNG HỢP" --pb http://127.0.0.1:8090 | tee lan2.txt
+          grep -q "thêm 0 giao dịch" lan2.txt
+          python migrate/doi_chieu.py "tests/mau/TỔNG HỢP/TONG_HOP.xlsx" --pb http://127.0.0.1:8090 --sai-so 0
+
+      - name: Hook chặn dữ liệu sai
+        run: python tests/kiem_tra_hook.py http://127.0.0.1:8090
+
+      - name: Dữ liệu thật (chỉ chạy nếu repo có thư mục data/)
+        if: hashFiles('data/TỔNG HỢP/TONG_HOP.xlsx') != ''
+        run: |
+          python migrate/import_excel.py "data/TỔNG HỢP" --pb http://127.0.0.1:8090 --xem-lai can_xem_lai.csv
+          python migrate/doi_chieu.py "data/TỔNG HỢP/TONG_HOP.xlsx" --pb http://127.0.0.1:8090
+
+      - name: Nhật ký PocketBase
+        if: always()
+        run: cat pocketbase/pb.log || true
