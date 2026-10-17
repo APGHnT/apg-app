@@ -25,6 +25,9 @@ HUONG_DAN = """BỘ CÀI POCKETBASE – APG (NAS Synology)
    tìm dòng có  http://0.0.0.0:8090/_/#/pbinstall/...  (link tạo tài khoản quản trị lần đầu,
    link chỉ dùng được trong thời gian ngắn – làm ngay sau khi container chạy)
    copy, thay 0.0.0.0 bằng IP của NAS, mở bằng trình duyệt, tạo email + mật khẩu MẠNH.
+   Nếu không thấy link hoặc link hết hạn: Container → apg-pocketbase → Action → Open terminal
+   → Create → chọn sh, rồi gõ:
+     /pb/pocketbase superuser upsert EMAIL MATKHAU --dir /pb/pb_data
 4. Trang quản trị: http://<IP-NAS>:8090/_/   (chỉ trong mạng nội bộ)
 
 DỮ LIỆU nằm trong thư mục pb_data – đưa vào Hyper Backup.
