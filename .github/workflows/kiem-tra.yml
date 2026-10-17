@@ -78,8 +78,12 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Đóng gói bộ cài NAS
-        run: python nas/dong_goi.py
+      - name: Đóng gói bộ cài NAS + file nạp dữ liệu (dùng dữ liệu mẫu)
+        run: |
+          pip install -r migrate/requirements.txt
+          python nas/dong_goi.py
+          python tests/tao_du_lieu_mau.py tests/mau
+          python migrate/tao_migration_du_lieu.py "tests/mau/TỔNG HỢP" dist/apg-pocketbase/pb_migrations/1760800000_nap_du_lieu_cu.js
 
       - name: Build và chạy như trên NAS (docker compose)
         working-directory: dist/apg-pocketbase
@@ -89,11 +93,12 @@ jobs:
           docker logs apg-pocketbase 2>&1 | grep -q "pbinstall" && echo "✓ có link tạo tài khoản quản trị lần đầu trong Log"
           docker exec apg-pocketbase /pb/pocketbase superuser upsert "$PB_EMAIL" "$PB_PASSWORD" --dir /pb/pb_data
 
-      - name: Nạp dữ liệu mẫu vào container và đối chiếu
+      - name: Dữ liệu đã nạp qua migration khi container khởi động → đối chiếu, nạp lại không nhân đôi
         run: |
-          pip install -r migrate/requirements.txt
-          python tests/tao_du_lieu_mau.py tests/mau
-          python migrate/import_excel.py "tests/mau/TỔNG HỢP" --pb http://127.0.0.1:8090
+          docker logs apg-pocketbase 2>&1 | grep "Nạp dữ liệu cũ" || true
+          python migrate/doi_chieu.py "tests/mau/TỔNG HỢP/TONG_HOP.xlsx" --pb http://127.0.0.1:8090 --sai-so 0
+          python migrate/import_excel.py "tests/mau/TỔNG HỢP" --pb http://127.0.0.1:8090 | tee lan2.txt
+          grep -q "thêm 0 giao dịch" lan2.txt
           python migrate/doi_chieu.py "tests/mau/TỔNG HỢP/TONG_HOP.xlsx" --pb http://127.0.0.1:8090 --sai-so 0
           python tests/kiem_tra_hook.py http://127.0.0.1:8090
 
