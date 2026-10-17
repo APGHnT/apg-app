@@ -39,7 +39,9 @@ python migrate/import_excel.py "đường/dẫn/TỔNG HỢP" --sqlite thu.db --
 python migrate/doi_chieu.py "đường/dẫn/TỔNG HỢP/TONG_HOP.xlsx" --sqlite thu.db
 ```
 
-Kết quả trên bộ backup 17/10/2026 (950 dòng): khớp TONG_HOP từng dự án, lệch dưới 1 đồng do làm tròn thành tiền. Có 15 giao dịch đã huỷ (0 đ) và 17 dòng cần xem lại (nghi trùng, ngày sai năm, thu chưa có ngày).
+Kết quả trên bộ backup 17/10/2026 (950 dòng): khớp TONG_HOP từng dự án, lệch dưới 1 đồng do làm tròn thành tiền. Có 15 giao dịch đã huỷ (0 đ) và 7 dòng cần xem lại (5 dòng ngày sai năm, 2 khoản thu chưa có ngày). Các dòng giống hệt nhau trong dữ liệu cũ đã được xác nhận là giao dịch riêng, phân biệt bằng mã màu hoặc mã vật liệu ghi trong ghi chú.
+
+Khi nhập mới, app nên cảnh báo trùng theo **dự án + ngày + nội dung + quy cách + SL + ĐG**. Vì vậy mã màu và mã vật liệu nên ghi vào `quy_cach`, không ghi vào ghi chú.
 
 ## Chạy với PocketBase
 

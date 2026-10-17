@@ -279,20 +279,16 @@ def doc_thu_muc(goc: str) -> BoDuLieu:
             ))
         wb.close()
 
-    # nghi trùng: cùng dự án, ngày, nội dung, SL, ĐG (chỉ xét giao dịch còn hiệu lực)
+    # Dữ liệu cũ: các dòng giống nhau (cùng ngày, nội dung, SL, ĐG) đã được Richard xác nhận
+    # là giao dịch riêng (khác mã màu / mã vật liệu ghi ở ghi chú) – KHÔNG đánh dấu trùng.
+    # Chỉ báo số lượng để biết; cảnh báo trùng dành cho lúc nhập mới trong app.
     nhom = defaultdict(list)
     for x in gd:
         if x.trang_thai == "HIEU_LUC":
             nhom[(x.du_an, x.ngay, x.noi_dung.upper(), x.so_luong, x.don_gia)].append(x)
-    for xs in nhom.values():
-        if len(xs) > 1:
-            for x in xs:
-                khac = ", ".join(f"dòng {y.ma_import.rsplit('#', 1)[1]}"
-                                 + ("" if y.ma_import.rsplit('#', 1)[0] == x.ma_import.rsplit('#', 1)[0]
-                                    else f" file {y.ma_import.rsplit('#', 1)[0]}")
-                                 + (f" (sổ gốc {y.nguon_goc})" if y.nguon_goc else "")
-                                 for y in xs if y is not x)
-                x.ly_do.append(f"nghi trùng với {khac}")
+    so_cap = sum(1 for xs in nhom.values() if len(xs) > 1)
+    if so_cap:
+        canh_bao.append(f"{so_cap} nhóm dòng giống nhau – giữ nguyên (đã xác nhận không trùng)")
 
     return BoDuLieu(cay=cay, map_cu=mp, du_an=du_an, giao_dich=gd, canh_bao=canh_bao)
 
