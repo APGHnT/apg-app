@@ -45,6 +45,8 @@ def file_con(path, ma_da, nhanh, khoi_cong, dong):
     m.append(["CONG_TAC", "CONG_DOAN", "MA_CAY", "TEN_CAY", "KEY"])
     for x in MAP:
         m.append(list(x))
+    m.append([None])
+    m.append(["Dò mã: CONG_TAC|CONG_DOAN → CONG_TAC|ALL → mã nhánh. MA_CAY_TAY luôn ưu tiên."])  # dòng ghi chú như file thật
     os.makedirs(os.path.dirname(path), exist_ok=True)
     wb.save(path)
 

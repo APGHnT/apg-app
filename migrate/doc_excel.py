@@ -148,7 +148,8 @@ def _doc_cay_map(path):
            for r in wb["CAY"].iter_rows(min_row=2, values_only=True) if r[0]]
     mp = {}
     for r in wb["MAP"].iter_rows(min_row=2, values_only=True):
-        if r[0]:
+        # chỉ lấy dòng đủ 3 cột CONG_TAC, CONG_DOAN, MA_CAY (bỏ dòng ghi chú/giải thích)
+        if len(r) >= 3 and chu(r[0]) and chu(r[1]) and chu(r[2]):
             mp[(chu(r[0]), chu(r[1]))] = chu(r[2])
     wb.close()
     return cay, mp
@@ -209,6 +210,12 @@ def doc_thu_muc(goc: str, file_sua: str | None = FILE_SUA) -> BoDuLieu:
             canh_bao.append(f"Cây mã/MAP ở {os.path.relpath(p, goc)} khác file đầu tiên – dùng bản của file đầu")
     co_con = Counter(c.ma_cha for c in cay if c.ma_cha)
     la = {c.ma: co_con[c.ma] == 0 for c in cay}
+    for (ct, cd), ma in mp.items():
+        if ma not in la:
+            raise SystemExit(f"MAP {ct}|{cd} trỏ tới mã {ma} không có trong cây")
+    for c in cay:
+        if not c.ten:
+            raise SystemExit(f"Cây mã: mã {c.ma} chưa có tên")
 
     gd = []
     for p in file_con:
