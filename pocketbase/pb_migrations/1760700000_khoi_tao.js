@@ -86,6 +86,8 @@ migrate((app) => {
         { name: "thanh_tien", type: "number" },
         { name: "nguon_tien", type: "text" },
         { name: "phan_bo", type: "select", values: ["RIENG", "CHUNG"], maxSelect: 1, required: true },
+        // DA_HUY: giao dịch có thật nhưng đã huỷ – vẫn lưu, thành tiền luôn = 0
+        { name: "trang_thai", type: "select", values: ["HIEU_LUC", "DA_HUY"], maxSelect: 1, required: true },
         { name: "nha_cc", type: "text" },
         { name: "quy_cach", type: "text" },
         { name: "ghi_chu", type: "text" },

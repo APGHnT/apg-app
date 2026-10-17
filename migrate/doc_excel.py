@@ -115,11 +115,14 @@ class GiaoDich:
     quy_cach: str
     ghi_chu: str
     nguon_goc: str
+    trang_thai: str = "HIEU_LUC"   # DA_HUY: giao dịch có thật nhưng đã huỷ, thành tiền = 0
     ly_do: list = field(default_factory=list)
 
     @property
     def thanh_tien(self):
-        # giống hook trên server: làm tròn đến đồng
+        # giống hook trên server: làm tròn đến đồng; đã huỷ = 0
+        if self.trang_thai == "DA_HUY":
+            return 0
         return round((self.so_luong or 0) * (self.don_gia or 0))
 
     @property
@@ -244,24 +247,23 @@ def doc_thu_muc(goc: str) -> BoDuLieu:
                 raise SystemExit(f"{rel} dòng {i} ({nd}): {loai} nhưng mã {ma}")
             if phan_bo == "RIENG" and ma_da not in da:
                 raise SystemExit(f"{rel}: dự án {ma_da} không có trong DANH_MUC_DU_AN")
-            if phan_bo == "CHUNG" and not ngay:
+            # Quy ước đã chốt (18/10/2026):
+            #  - thành tiền = 0 → giao dịch có thật nhưng đã huỷ: vẫn lưu, trạng thái DA_HUY
+            #  - số âm → tiền thừa nhận về / trừ ứng / chiết khấu: hợp lệ, không đánh dấu
+            da_huy = (sl or 0) * (dg or 0) == 0
+            if phan_bo == "CHUNG" and not ngay and not da_huy:
                 raise SystemExit(f"{rel} dòng {i} ({nd}): chi phí CHUNG thiếu ngày")
 
             # nghi vấn: vẫn chuyển, đánh dấu cần xem lại
-            if not ngay:
-                ly_do.append("thiếu ngày")
-            if not sl:
-                ly_do.append("thiếu số lượng")
-            if not dg:
-                ly_do.append("thiếu đơn giá")
-            if phan_bo == "RIENG" and ngay:
-                d = da[ma_da]
-                if ngay < d.khoi_cong:
-                    ly_do.append(f"ngày {ngay} trước khởi công {d.khoi_cong}")
-                if d.ket_thuc and ngay > d.ket_thuc:
-                    ly_do.append(f"ngày {ngay} sau kết thúc {d.ket_thuc}")
-            if (sl or 0) * (dg or 0) < 0:
-                ly_do.append("số âm – xác nhận ý nghĩa")
+            if not da_huy:
+                if not ngay:
+                    ly_do.append("thiếu ngày")
+                if phan_bo == "RIENG" and ngay:
+                    d = da[ma_da]
+                    if ngay < d.khoi_cong:
+                        ly_do.append(f"ngày {ngay} trước khởi công {d.khoi_cong}")
+                    if d.ket_thuc and ngay > d.ket_thuc:
+                        ly_do.append(f"ngày {ngay} sau kết thúc {d.ket_thuc}")
 
             gc = g("GHI_CHU")
             gd.append(GiaoDich(
@@ -273,17 +275,23 @@ def doc_thu_muc(goc: str) -> BoDuLieu:
                 nha_cc=chu(g("NHA_CC")), quy_cach=chu(g("QUY_CACH")),
                 ghi_chu=ngay_iso(gc) if isinstance(gc, (dt.date, dt.datetime)) else chu(gc),
                 nguon_goc=chu(g("DONG_GOC")), ly_do=ly_do,
+                trang_thai="DA_HUY" if da_huy else "HIEU_LUC",
             ))
         wb.close()
 
-    # nghi trùng: cùng dự án, ngày, nội dung, SL, ĐG
+    # nghi trùng: cùng dự án, ngày, nội dung, SL, ĐG (chỉ xét giao dịch còn hiệu lực)
     nhom = defaultdict(list)
     for x in gd:
-        nhom[(x.du_an, x.ngay, x.noi_dung.upper(), x.so_luong, x.don_gia)].append(x)
+        if x.trang_thai == "HIEU_LUC":
+            nhom[(x.du_an, x.ngay, x.noi_dung.upper(), x.so_luong, x.don_gia)].append(x)
     for xs in nhom.values():
         if len(xs) > 1:
             for x in xs:
-                khac = ", ".join(y.ma_import for y in xs if y is not x)
+                khac = ", ".join(f"dòng {y.ma_import.rsplit('#', 1)[1]}"
+                                 + ("" if y.ma_import.rsplit('#', 1)[0] == x.ma_import.rsplit('#', 1)[0]
+                                    else f" file {y.ma_import.rsplit('#', 1)[0]}")
+                                 + (f" (sổ gốc {y.nguon_goc})" if y.nguon_goc else "")
+                                 for y in xs if y is not x)
                 x.ly_do.append(f"nghi trùng với {khac}")
 
     return BoDuLieu(cay=cay, map_cu=mp, du_an=du_an, giao_dich=gd, canh_bao=canh_bao)

@@ -46,7 +46,7 @@ def ghi_sqlite(bo, path):
     CREATE TABLE giao_dich (id TEXT PRIMARY KEY, du_an TEXT DEFAULT '', loai TEXT, ngay TEXT DEFAULT '',
         noi_dung TEXT, ma_cay TEXT, dvt TEXT, so_luong REAL, don_gia REAL, thanh_tien REAL,
         nguon_tien TEXT, phan_bo TEXT, nha_cc TEXT, quy_cach TEXT, ghi_chu TEXT,
-        ma_import TEXT UNIQUE, nguon_goc TEXT, can_xem_lai INT, ly_do_xem_lai TEXT);
+        ma_import TEXT UNIQUE, nguon_goc TEXT, can_xem_lai INT, ly_do_xem_lai TEXT, trang_thai TEXT);
     """)
     la = la_cua(bo.cay)
     for d in bo.du_an:
@@ -58,10 +58,11 @@ def ghi_sqlite(bo, path):
     for (ct, cd), ma in bo.map_cu.items():
         db.execute("INSERT INTO map_cu VALUES (?,?,?,?)", (f"{ct}|{cd}", ct, cd, ma))
     for g in bo.giao_dich:
-        db.execute("INSERT INTO giao_dich VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (
+        db.execute("INSERT INTO giao_dich VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (
             g.ma_import, g.du_an, g.loai, pb_ngay(g.ngay), g.noi_dung, g.ma_cay, g.dvt,
             g.so_luong or 0, g.don_gia or 0, g.thanh_tien, g.nguon_tien, g.phan_bo, g.nha_cc,
-            g.quy_cach, g.ghi_chu, g.ma_import, g.nguon_goc, int(bool(g.ly_do)), "; ".join(g.ly_do)))
+            g.quy_cach, g.ghi_chu, g.ma_import, g.nguon_goc, int(bool(g.ly_do)), "; ".join(g.ly_do),
+            g.trang_thai))
     with open(SQL_BAO_CAO, encoding="utf-8") as f:
         db.execute("CREATE VIEW tong_du_an AS " + f.read())
     db.commit()
@@ -139,7 +140,7 @@ def ghi_pocketbase(bo, pb: PB):
             "so_luong": g.so_luong or 0, "don_gia": g.don_gia or 0,
             "nguon_tien": g.nguon_tien, "phan_bo": g.phan_bo, "nha_cc": g.nha_cc,
             "quy_cach": g.quy_cach, "ghi_chu": g.ghi_chu, "ma_import": g.ma_import,
-            "nguon_goc": g.nguon_goc, "can_xem_lai": bool(g.ly_do), "ly_do_xem_lai": "; ".join(g.ly_do),
+            "nguon_goc": g.nguon_goc, "trang_thai": g.trang_thai, "can_xem_lai": bool(g.ly_do), "ly_do_xem_lai": "; ".join(g.ly_do),
         })
         moi += 1
     return moi, bo_qua
@@ -164,17 +165,19 @@ def main():
     for c in bo.canh_bao:
         print("CẢNH BÁO:", c)
     xl = [g for g in bo.giao_dich if g.ly_do]
+    huy = [g for g in bo.giao_dich if g.trang_thai == "DA_HUY"]
     print(f"Đọc: {len(bo.du_an)} dự án, {len(bo.cay)} mã cây, {len(bo.map_cu)} map, "
-          f"{len(bo.giao_dich)} giao dịch ({len(xl)} cần xem lại)")
+          f"{len(bo.giao_dich)} giao dịch ({len(huy)} đã huỷ, {len(xl)} cần xem lại)")
 
     if a.xem_lai:
         import csv
         with open(a.xem_lai, "w", newline="", encoding="utf-8-sig") as f:
             w = csv.writer(f)
-            w.writerow(["file#dong", "du_an", "ngay", "noi_dung", "so_luong", "don_gia", "thanh_tien", "ly_do"])
+            w.writerow(["file#dong", "so_goc", "du_an", "ngay", "noi_dung", "so_luong", "don_gia",
+                        "thanh_tien", "ghi_chu", "ly_do"])
             for g in xl:
-                w.writerow([g.ma_import, g.du_an or "CHUNG", g.ngay, g.noi_dung, g.so_luong, g.don_gia,
-                            g.thanh_tien, "; ".join(g.ly_do)])
+                w.writerow([g.ma_import, g.nguon_goc, g.du_an or "CHUNG", g.ngay, g.noi_dung, g.so_luong,
+                            g.don_gia, g.thanh_tien, g.ghi_chu, "; ".join(g.ly_do)])
         print("Danh sách cần xem lại:", a.xem_lai)
 
     if a.sqlite:

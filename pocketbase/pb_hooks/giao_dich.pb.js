@@ -9,10 +9,13 @@ onRecordValidate((e) => {
   };
   const ngay10 = (s) => (s || "").substring(0, 10);
 
-  // 1. Thành tiền luôn do máy tính, làm tròn đến đồng
+  // 1. Thành tiền luôn do máy tính, làm tròn đến đồng.
+  //    Giao dịch đã huỷ: giữ nguyên SL/ĐG đã ghi để tra lại, nhưng thành tiền = 0.
+  //    Số âm được phép: tiền thừa nhận về / trừ ứng / chiết khấu.
   const sl = r.getFloat("so_luong");
   const dg = r.getFloat("don_gia");
-  r.set("thanh_tien", Math.round(sl * dg));
+  const daHuy = r.getString("trang_thai") === "DA_HUY";
+  r.set("thanh_tien", daHuy ? 0 : Math.round(sl * dg));
 
   // 2. Mã cây phải tồn tại, đã xuống lá, đúng nhánh THU/CHI
   let ma;
@@ -33,15 +36,16 @@ onRecordValidate((e) => {
   const ngay = ngay10(r.getString("ngay"));
   if (phanBo === "RIENG" && !duAnId) loi("chưa chọn dự án");
   if (phanBo === "CHUNG" && duAnId) loi("chi phí CHUNG không gắn với một dự án");
-  if (phanBo === "CHUNG" && !ngay) loi("chi phí CHUNG phải có ngày");
+  if (phanBo === "CHUNG" && !ngay && !daHuy) loi("chi phí CHUNG phải có ngày");
   if (phanBo === "CHUNG" && loai !== "CHI") loi("chỉ khoản CHI mới được phân bổ CHUNG");
 
   // 4. Dòng nghi vấn được phép lưu tạm, nhưng phải ghi lý do
   const xemLai = r.getBool("can_xem_lai");
   if (xemLai && !r.getString("ly_do_xem_lai").trim()) loi("đánh dấu cần xem lại thì phải ghi lý do");
 
-  // 5. Dòng bình thường: đủ ngày, số lượng, đơn giá và ngày nằm trong thời gian dự án
-  if (!xemLai) {
+  // 5. Dòng bình thường (còn hiệu lực, không đánh dấu xem lại): đủ ngày, số lượng, đơn giá
+  //    và ngày nằm trong thời gian dự án
+  if (!xemLai && !daHuy) {
     if (!ngay) loi("thiếu ngày");
     if (sl === 0) loi("thiếu số lượng");
     if (dg === 0) loi("thiếu đơn giá");

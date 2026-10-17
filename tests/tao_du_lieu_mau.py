@@ -2,7 +2,9 @@
 mà không cần đưa dữ liệu thật lên GitHub.
 
 Kết quả đúng được TÍNH TAY và ghi cứng vào TONG_HOP.xlsx mẫu (không lấy từ code đang kiểm tra):
-  DA A (01/01–31/01/2026): THU 5.000.000 · CHI 1.000.000 + 1.200.000 + chung 1.000.000 + 1.000.000 = 4.200.000
+  DA A (01/01–31/01/2026): THU 5.000.000 · CHI 1.000.000 + 1.200.000 − 100.000 (tiền thừa nhận về)
+                            + D16 50.000 (thiếu ngày, vẫn tính) + chung 1.000.000 + 1.000.000 = 4.150.000
+                            dòng THUẾ huỷ (SL 0) = 0
   DA B (từ 15/01/2026):    THU 3.000.000 · CHI   500.000 + chung 1.000.000 + 3.000.000            = 4.500.000
   Chung: 10/01 1tr (chỉ A chạy) · 20/01 2tr (A, B chia đôi) · 10/02 3tr (chỉ B)
 """
@@ -62,7 +64,10 @@ def main(goc):
     file_con(f"{p}/MAUA/0.02_THI_CONG/MAUA_0.02.02.02_THEP.xlsx", "MAUA", "0.02.02.02", D(2026, 1, 1), [
         dict(NGAY=D(2026, 1, 5), LOAI="CHI", NOI_DUNG="D10", CONG_TAC="THEP", CONG_DOAN="THEP", SL=10, DON_GIA=100000),
         dict(NGAY=D(2026, 1, 6), LOAI="CHI", NOI_DUNG="D12", MA_CAY_TAY="0.02.02.02", SL="=2*5", DON_GIA="=(120)*1000"),
-        dict(LOAI="CHI", NOI_DUNG="ĐINH", MA_CAY_TAY="0.02.02.02"),  # thiếu ngày, SL, ĐG → cần xem lại
+        dict(LOAI="CHI", NOI_DUNG="ĐINH", MA_CAY_TAY="0.02.02.02"),  # thiếu cả SL, ĐG → đã huỷ (0 đ)
+        dict(NGAY=D(2026, 1, 7), LOAI="CHI", NOI_DUNG="THUẾ HUỶ", MA_CAY_TAY="0.02.02.02", SL=0, DON_GIA=50000000),
+        dict(NGAY=D(2026, 1, 8), LOAI="CHI", NOI_DUNG="TIỀN THỪA NHẬN VỀ", MA_CAY_TAY="0.02.02.02", SL=1, DON_GIA=-100000),
+        dict(LOAI="CHI", NOI_DUNG="D16", MA_CAY_TAY="0.02.02.02", SL=1, DON_GIA=50000),  # có tiền, thiếu ngày → xem lại
     ])
     file_con(f"{p}/MAUA/1_THU/MAUA_1_THU.xlsx", "MAUA", "1", D(2026, 1, 1), [
         dict(NGAY=D(2026, 1, 2), LOAI="THU", NOI_DUNG="Hợp đồng", MA_CAY_TAY="1.01", SL=1, DON_GIA=5000000),
@@ -83,7 +88,7 @@ def main(goc):
     ws = wb.active
     ws.title = "DU_AN"
     ws.append(["MA_DU_AN", "NAM", "TEN", "KHOI_CONG", "KET_THUC", "THU", "CHI"])
-    ws.append(["MAUA", 2026, "Dự án mẫu A", D(2026, 1, 1), D(2026, 1, 31), 5000000, 4200000])
+    ws.append(["MAUA", 2026, "Dự án mẫu A", D(2026, 1, 1), D(2026, 1, 31), 5000000, 4150000])
     ws.append(["MAUB", 2026, "Dự án mẫu B", D(2026, 1, 15), None, 3000000, 4500000])
     wb.save(os.path.join(th, "TONG_HOP.xlsx"))
     print("Đã tạo dữ liệu mẫu:", th)

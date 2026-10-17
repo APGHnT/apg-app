@@ -24,6 +24,8 @@ Script nạp  ─┘
 Mọi nguồn ghi (app, Claude, script, trang quản trị) đều đi qua cùng một hook:
 
 1. **Thành tiền** do máy tính = số lượng × đơn giá, làm tròn đến đồng. Không nhập tay.
+   - **Số âm** hợp lệ: tiền thừa nhận về, trừ ứng, chiết khấu.
+   - **Đã huỷ** (`trang_thai = DA_HUY`): giao dịch có thật nhưng bị huỷ. Vẫn lưu, giữ SL/ĐG đã ghi để tra lại, nhưng thành tiền luôn bằng 0. Khi chuyển dữ liệu từ Excel, mọi dòng có thành tiền bằng 0 đều được ghi là đã huỷ.
 2. **Mã cây** phải có trong cây và đã xuống lá. THU dùng nhánh `1`, CHI dùng nhánh `0.xx`.
 3. **RIENG** phải có dự án. **CHUNG** không gắn dự án và phải có ngày, vì chi phí chung được chia đều cho các dự án đang chạy vào ngày đó.
 4. Dòng bình thường phải có ngày, số lượng, đơn giá, và ngày phải nằm trong thời gian dự án.
@@ -37,7 +39,7 @@ python migrate/import_excel.py "đường/dẫn/TỔNG HỢP" --sqlite thu.db --
 python migrate/doi_chieu.py "đường/dẫn/TỔNG HỢP/TONG_HOP.xlsx" --sqlite thu.db
 ```
 
-Kết quả trên bộ backup 17/10/2026 (950 dòng): khớp TONG_HOP từng dự án, lệch dưới 1 đồng do làm tròn thành tiền. Có 42 dòng bị đánh dấu cần xem lại.
+Kết quả trên bộ backup 17/10/2026 (950 dòng): khớp TONG_HOP từng dự án, lệch dưới 1 đồng do làm tròn thành tiền. Có 15 giao dịch đã huỷ (0 đ) và 17 dòng cần xem lại (nghi trùng, ngày sai năm, thu chưa có ngày).
 
 ## Chạy với PocketBase
 
