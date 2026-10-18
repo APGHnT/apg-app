@@ -49,6 +49,12 @@ email, mk = "nhanvien.thu@apg.local", "MatKhauThu-12345"
 goi("POST", "/api/collections/users/records",
     {"email": email, "password": mk, "passwordConfirm": mk}, token=tok_admin)
 
+# Người lạ không tự đăng ký được (cả trong LAN lẫn qua Internet)
+dk = {"email": "nguoila@x.com", "password": "12345678abc", "passwordConfirm": "12345678abc"}
+ky_vong("Người lạ tự đăng ký qua Internet", goi("POST", "/api/collections/users/records", dk,
+        headers={"X-Forwarded-For": "113.161.5.7"})[0], (400, 403))
+ky_vong("Người lạ tự đăng ký trong LAN", goi("POST", "/api/collections/users/records", dk)[0], (400, 403))
+
 # Qua Funnel: chặn quản trị
 ky_vong("Funnel: mở trang quản trị /_/", goi("GET", "/_/", headers=FUNNEL)[0], 403)
 ky_vong("Funnel: superuser đăng nhập", goi("POST", "/api/collections/_superusers/auth-with-password",
