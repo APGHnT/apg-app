@@ -57,6 +57,9 @@ jobs:
       - name: Hook chặn dữ liệu sai
         run: python tests/kiem_tra_hook.py http://127.0.0.1:8090
 
+      - name: Người nhập / người sửa và quyền tài khoản thường
+        run: python tests/kiem_tra_nguoi_nhap.py http://127.0.0.1:8090
+
       - name: Chặn quản trị khi truy cập qua Tailscale Funnel
         run: python tests/kiem_tra_funnel.py http://127.0.0.1:8090
 
@@ -105,6 +108,7 @@ jobs:
           python migrate/doi_chieu.py "tests/mau/TỔNG HỢP/TONG_HOP.xlsx" --pb http://127.0.0.1:8090 --sai-so 0
           python tests/kiem_tra_hook.py http://127.0.0.1:8090
           python tests/kiem_tra_funnel.py http://127.0.0.1:8090
+          python tests/kiem_tra_nguoi_nhap.py http://127.0.0.1:8090
 
       - name: Khởi động lại container – dữ liệu phải còn nguyên
         run: |
