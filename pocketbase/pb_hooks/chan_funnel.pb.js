@@ -1,34 +1,60 @@
 /// <reference path="../pb_data/types.d.ts" />
-// Chặn mọi quyền quản trị khi truy cập TỪ INTERNET qua Tailscale Funnel.
+// Chặn mọi quyền quản trị khi truy cập TỪ INTERNET (qua Tailscale Funnel).
 //
-// Tailscale Funnel gắn header "Tailscale-Funnel-Request: ?1" vào mọi request đi từ Internet vào,
-// và xoá header này nếu người ngoài tự gửi lên, nên không giả mạo được. Truy cập trong LAN
-// (http://192.168.1.169:8090) hoặc qua Tailscale riêng thì không có header này và không bị ảnh hưởng.
+// Một request được coi là "từ Internet" khi có MỘT trong hai dấu hiệu:
+//   1. Header "Tailscale-Funnel-Request" (Tailscale bản mới tự gắn, người ngoài không giả được).
+//   2. Header "X-Forwarded-For" (Tailscale gắn IP thật của người truy cập, ghi đè giá trị người ngoài gửi)
+//      chứa IP KHÔNG thuộc mạng nội bộ / mạng Tailscale riêng.
+// Truy cập trong LAN (http://192.168.1.169:8090) không đi qua Tailscale nên không có các header này.
+// Truy cập qua Tailscale riêng có X-Forwarded-For là IP 100.x.x.x → vẫn được vào quản trị.
 //
-// Qua Funnel:
-//   - không mở được trang quản trị /_/
-//   - không đăng nhập được tài khoản superuser
-//   - không gọi được các API quản trị (settings, backups, logs, crons, cấu trúc bảng)
-//   - token superuser (lỡ bị lộ) cũng không dùng được
-// Người dùng thường (users) vẫn đăng nhập, nhập và xem dữ liệu bình thường.
+// Lưu ý JSVM: mỗi handler chạy trong ngữ cảnh riêng, nên mọi hàm phụ phải khai báo BÊN TRONG handler.
 
 routerUse((e) => {
-  if (e.request.header.get("Tailscale-Funnel-Request") !== "") {
+  const laIpNoiBo = (ip) => {
+    ip = (ip || "").trim().toLowerCase();
+    if (ip.startsWith("[")) ip = ip.slice(1, ip.indexOf("]"));
+    if (ip.startsWith("::ffff:")) ip = ip.slice(7);
+    if (ip === "::1" || ip.startsWith("fd7a:115c:a1e0:") || ip.startsWith("fc") || ip.startsWith("fd") || ip.startsWith("fe80:")) return true;
+    const p = ip.split(".").map((x) => parseInt(x, 10));
+    if (p.length !== 4 || p.some((x) => isNaN(x))) return false;
+    return p[0] === 127 || p[0] === 10 ||
+      (p[0] === 192 && p[1] === 168) ||
+      (p[0] === 172 && p[1] >= 16 && p[1] <= 31) ||
+      (p[0] === 100 && p[1] >= 64 && p[1] <= 127);   // mạng Tailscale riêng
+  };
+
+  const h = e.request.header;
+  const xff = h.get("X-Forwarded-For");
+  const ipNguon = xff ? xff.split(",")[0] : "";
+  const tuInternet = h.get("Tailscale-Funnel-Request") !== "" || (xff !== "" && !laIpNoiBo(ipNguon));
+
+  if (tuInternet) {
     const p = e.request.url.path;
-    const cam = [
-      "/_",
-      "/api/collections/_superusers",
-      "/api/settings",
-      "/api/backups",
-      "/api/logs",
-      "/api/crons",
-    ];
+    const cam = ["/_", "/api/collections/_superusers", "/api/settings", "/api/backups", "/api/logs", "/api/crons"];
     const laApiCauTruc = p === "/api/collections" || p === "/api/collections/" ||
-      (p.startsWith("/api/collections/") && p.split("/").length <= 4) ||   // /api/collections/{ten}
+      (p.startsWith("/api/collections/") && p.split("/").length <= 4) ||
       p.startsWith("/api/collections/import");
     if (cam.some((x) => p === x || p.startsWith(x + "/")) || laApiCauTruc || e.hasSuperuserAuth()) {
       throw new ForbiddenError("Không được phép truy cập chức năng quản trị từ Internet.");
     }
   }
   return e.next();
+});
+
+// Trang chẩn đoán tạm thời: xem request đi qua Tailscale mang những header nào.
+// Không trả về dữ liệu nhạy cảm (không có Authorization/Cookie).
+routerAdd("GET", "/api/apg/chan-doan", (e) => {
+  const h = e.request.header;
+  return e.json(200, {
+    path: e.request.url.path,
+    host: e.request.host,
+    remoteAddr: e.request.remoteAddr,
+    xForwardedFor: h.get("X-Forwarded-For"),
+    xForwardedHost: h.get("X-Forwarded-Host"),
+    xForwardedProto: h.get("X-Forwarded-Proto"),
+    tailscaleFunnelRequest: h.get("Tailscale-Funnel-Request"),
+    tailscaleUserLogin: h.get("Tailscale-User-Login"),
+    userAgent: h.get("User-Agent"),
+  });
 });

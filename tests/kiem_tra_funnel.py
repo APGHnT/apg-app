@@ -69,6 +69,17 @@ ky_vong("Funnel: nhân viên xem báo cáo dự án", s, 200)
 ky_vong("Funnel: chưa đăng nhập thì không xem được dữ liệu",
         len(goi("GET", "/api/collections/giao_dich/records", headers=FUNNEL)[1].get("items", [])), 0)
 
+# Tailscale bản cũ không có header Funnel: nhận diện qua X-Forwarded-For là IP công cộng
+XFF_NGOAI = {"X-Forwarded-For": "113.161.5.7"}
+ky_vong("XFF IP ngoài: mở /_/", goi("GET", "/_/", headers=XFF_NGOAI)[0], 403)
+ky_vong("XFF IP ngoài: superuser đăng nhập", goi("POST", "/api/collections/_superusers/auth-with-password",
+        {"identity": os.environ["PB_EMAIL"], "password": os.environ["PB_PASSWORD"]}, headers=XFF_NGOAI)[0], 403)
+ky_vong("XFF IP ngoài: nhân viên xem báo cáo",
+        goi("GET", "/api/collections/tong_du_an/records", headers=XFF_NGOAI, token=tok_nv)[0], 200)
+ky_vong("XFF IP Tailscale riêng (100.x): mở /_/ được", goi("GET", "/_/", headers={"X-Forwarded-For": "100.101.102.103"})[0], 200)
+ky_vong("XFF IP LAN: mở /_/ được", goi("GET", "/_/", headers={"X-Forwarded-For": "192.168.1.50"})[0], 200)
+ky_vong("Trang chẩn đoán", goi("GET", "/api/apg/chan-doan", headers=XFF_NGOAI)[0], 200)
+
 # Trong LAN: trang quản trị vẫn mở được
 ky_vong("LAN: mở trang quản trị /_/", goi("GET", "/_/")[0], 200)
 
