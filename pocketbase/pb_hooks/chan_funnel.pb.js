@@ -36,25 +36,9 @@ routerUse((e) => {
       (p.startsWith("/api/collections/") && p.split("/").length <= 4) ||
       p.startsWith("/api/collections/import");
     if (cam.some((x) => p === x || p.startsWith(x + "/")) || laApiCauTruc || e.hasSuperuserAuth()) {
-      throw new ForbiddenError("Không được phép truy cập chức năng quản trị từ Internet.");
+      // Câu báo không dấu: trình duyệt điện thoại hay hiển thị sai tiếng Việt khi xem JSON trực tiếp.
+      throw new ForbiddenError("Khong duoc phep truy cap chuc nang quan tri tu Internet.");
     }
   }
   return e.next();
-});
-
-// Trang chẩn đoán tạm thời: xem request đi qua Tailscale mang những header nào.
-// Không trả về dữ liệu nhạy cảm (không có Authorization/Cookie).
-routerAdd("GET", "/api/apg/chan-doan", (e) => {
-  const h = e.request.header;
-  return e.json(200, {
-    path: e.request.url.path,
-    host: e.request.host,
-    remoteAddr: e.request.remoteAddr,
-    xForwardedFor: h.get("X-Forwarded-For"),
-    xForwardedHost: h.get("X-Forwarded-Host"),
-    xForwardedProto: h.get("X-Forwarded-Proto"),
-    tailscaleFunnelRequest: h.get("Tailscale-Funnel-Request"),
-    tailscaleUserLogin: h.get("Tailscale-User-Login"),
-    userAgent: h.get("User-Agent"),
-  });
 });

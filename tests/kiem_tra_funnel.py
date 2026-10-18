@@ -78,7 +78,7 @@ ky_vong("XFF IP ngoài: nhân viên xem báo cáo",
         goi("GET", "/api/collections/tong_du_an/records", headers=XFF_NGOAI, token=tok_nv)[0], 200)
 ky_vong("XFF IP Tailscale riêng (100.x): mở /_/ được", goi("GET", "/_/", headers={"X-Forwarded-For": "100.101.102.103"})[0], 200)
 ky_vong("XFF IP LAN: mở /_/ được", goi("GET", "/_/", headers={"X-Forwarded-For": "192.168.1.50"})[0], 200)
-ky_vong("Trang chẩn đoán", goi("GET", "/api/apg/chan-doan", headers=XFF_NGOAI)[0], 200)
+ky_vong("Trang chẩn đoán tạm đã gỡ", goi("GET", "/api/apg/chan-doan", headers=XFF_NGOAI)[0], 404)
 
 # Trong LAN: trang quản trị vẫn mở được
 ky_vong("LAN: mở trang quản trị /_/", goi("GET", "/_/")[0], 200)
